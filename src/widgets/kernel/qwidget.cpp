@@ -1880,7 +1880,6 @@ void QWidgetPrivate::deleteTLSysExtra()
         if (extra->topextra->window) {
             extra->topextra->window->destroy();
         }
-        setWinId(0);
         delete extra->topextra->window;
         extra->topextra->window = 0;
 
@@ -6415,13 +6414,13 @@ bool QWidget::hasFocus() const
     const QWidget* w = this;
     while (w->d_func()->extra && w->d_func()->extra->focus_proxy)
         w = w->d_func()->extra->focus_proxy;
-    if (QWidget *window = w->window()) {
 #ifndef QT_NO_GRAPHICSVIEW
+    if (QWidget *window = w->window()) {
         QWExtra *e = window->d_func()->extra;
         if (e && e->proxyWidget && e->proxyWidget->hasFocus() && window->focusWidget() == w)
             return true;
-#endif
     }
+#endif // !QT_NO_GRAPHICSVIEW
     return (QApplication::focusWidget() == w);
 }
 
@@ -7216,7 +7215,7 @@ void QWidgetPrivate::setGeometry_sys(int x, int y, int w, int h, bool isMove)
             if (q->isVisible())
                 hide_sys();
             data.crect = QRect(x, y, w, h);
-        } else if (q->isVisible() && q->testAttribute(Qt::WA_OutsideWSRange)) {
+        } else if (q->testAttribute(Qt::WA_OutsideWSRange)) {
             q->setAttribute(Qt::WA_OutsideWSRange, false);
             needsShow = true;
         }
@@ -7918,8 +7917,11 @@ void QWidgetPrivate::show_sys()
         invalidateBuffer(q->rect());
         q->setAttribute(Qt::WA_Mapped);
         // add our window the modal window list (native dialogs)
-        if ((q->isWindow() && (!extra || !extra->proxyWidget))
-            && q->windowModality() != Qt::NonModal && window) {
+        if (window && q->isWindow()
+#ifndef QT_NO_GRAPHICSVIEW
+            && (!extra || !extra->proxyWidget)
+#endif
+            && q->windowModality() != Qt::NonModal) {
             QGuiApplicationPrivate::showModalWindow(window);
         }
         return;
@@ -8053,8 +8055,11 @@ void QWidgetPrivate::hide_sys()
     if (q->testAttribute(Qt::WA_DontShowOnScreen)) {
         q->setAttribute(Qt::WA_Mapped, false);
         // remove our window from the modal window list (native dialogs)
-        if ((q->isWindow() && (!extra || !extra->proxyWidget))
-            && q->windowModality() != Qt::NonModal && window) {
+        if (window && q->isWindow()
+#ifndef QT_NO_GRAPHICSVIEW
+            && (!extra || !extra->proxyWidget)
+#endif
+            && q->windowModality() != Qt::NonModal) {
             QGuiApplicationPrivate::hideModalWindow(window);
         }
         // do not return here, if window non-zero, we must hide it
@@ -12842,9 +12847,8 @@ void QWidget::setMask(const QRegion &newMask)
 void QWidgetPrivate::setMask_sys(const QRegion &region)
 {
     Q_Q(QWidget);
-    if (const QWindow *window = q->windowHandle())
-        if (QPlatformWindow *platformWindow = window->handle())
-            platformWindow->setMask(QHighDpi::toNativeLocalRegion(region, window));
+    if (QWindow *window = q->windowHandle())
+        window->setMask(region);
 }
 
 /*!

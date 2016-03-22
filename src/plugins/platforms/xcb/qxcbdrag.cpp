@@ -193,6 +193,7 @@ void QXcbDrag::startDrag()
                             XCB_ATOM_ATOM, 32, drag_types.size(), (const void *)drag_types.constData());
 
     setUseCompositing(current_virtual_desktop->compositingActive());
+    setScreen(current_virtual_desktop->screens().constFirst()->screen());
     QBasicDrag::startDrag();
     if (connection()->mouseGrabber() == Q_NULLPTR)
         shapedPixmapWindow()->setMouseGrabEnabled(true);
@@ -322,6 +323,9 @@ void QXcbDrag::move(const QPoint &globalPos)
     if (virtualDesktop != current_virtual_desktop) {
         setUseCompositing(virtualDesktop->compositingActive());
         recreateShapedPixmapWindow(static_cast<QPlatformScreen*>(screen)->screen(), deviceIndependentPos);
+        if (connection()->mouseGrabber() == Q_NULLPTR)
+            shapedPixmapWindow()->setMouseGrabEnabled(true);
+
         current_virtual_desktop = virtualDesktop;
     } else {
         QBasicDrag::moveShapedPixmapWindow(deviceIndependentPos);
@@ -419,6 +423,7 @@ void QXcbDrag::move(const QPoint &globalPos)
 
             xcb_client_message_event_t enter;
             enter.response_type = XCB_CLIENT_MESSAGE;
+            enter.sequence = 0;
             enter.window = target;
             enter.format = 32;
             enter.type = atom(QXcbAtom::XdndEnter);
@@ -447,6 +452,7 @@ void QXcbDrag::move(const QPoint &globalPos)
 
         xcb_client_message_event_t move;
         move.response_type = XCB_CLIENT_MESSAGE;
+        move.sequence = 0;
         move.window = target;
         move.format = 32;
         move.type = atom(QXcbAtom::XdndPosition);
@@ -475,6 +481,7 @@ void QXcbDrag::drop(const QPoint &globalPos)
 
     xcb_client_message_event_t drop;
     drop.response_type = XCB_CLIENT_MESSAGE;
+    drop.sequence = 0;
     drop.window = current_target;
     drop.format = 32;
     drop.type = atom(QXcbAtom::XdndDrop);
@@ -736,6 +743,7 @@ void QXcbDrag::handle_xdnd_position(QPlatformWindow *w, const xcb_client_message
 
     xcb_client_message_event_t response;
     response.response_type = XCB_CLIENT_MESSAGE;
+    response.sequence = 0;
     response.window = xdnd_dragsource;
     response.format = 32;
     response.type = atom(QXcbAtom::XdndStatus);
@@ -882,6 +890,7 @@ void QXcbDrag::send_leave()
 
     xcb_client_message_event_t leave;
     leave.response_type = XCB_CLIENT_MESSAGE;
+    leave.sequence = 0;
     leave.window = current_target;
     leave.format = 32;
     leave.type = atom(QXcbAtom::XdndLeave);
@@ -952,6 +961,7 @@ void QXcbDrag::handleDrop(QPlatformWindow *, const xcb_client_message_event_t *e
 
     xcb_client_message_event_t finished;
     finished.response_type = XCB_CLIENT_MESSAGE;
+    finished.sequence = 0;
     finished.window = xdnd_dragsource;
     finished.format = 32;
     finished.type = atom(QXcbAtom::XdndFinished);

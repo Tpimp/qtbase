@@ -356,6 +356,8 @@ static NSString *_q_NSWindowDidChangeOcclusionStateNotification = nil;
     if (m_platformWindow->m_nsWindow && geometry == m_platformWindow->geometry())
         return;
 
+    const bool isResize = geometry.size() != m_platformWindow->geometry().size();
+
     // It can happen that self.window is nil (if we are changing
     // styleMask from/to borderless and content view is being re-parented)
     // - this results in an invalid coordinates.
@@ -385,7 +387,7 @@ static NSString *_q_NSWindowDidChangeOcclusionStateNotification = nil;
         // calles, which Qt and Qt applications do not excpect.
         if (!m_platformWindow->m_inSetGeometry)
             QWindowSystemInterface::flushWindowSystemEvents();
-        else
+        else if (isResize)
             m_backingStore = 0;
     }
 }
@@ -1405,6 +1407,10 @@ static QTabletEvent::TabletDevice wacomTabletDevice(NSEvent *theEvent)
                momentumPhase == NSEventPhaseEnded || momentumPhase == NSEventPhaseCancelled) {
         ph = Qt::ScrollEnd;
         m_scrolling = false;
+    } else if (phase == NSEventPhaseNone && momentumPhase == NSEventPhaseNone) {
+        ph = Qt::NoScrollPhase;
+        if (!QGuiApplicationPrivate::scrollNoPhaseAllowed)
+            ph = Qt::ScrollUpdate;
     }
 
     QWindowSystemInterface::handleWheelEvent(m_window, qt_timestamp, qt_windowPoint, qt_screenPoint, pixelDelta, angleDelta, currentWheelModifiers, ph, source);

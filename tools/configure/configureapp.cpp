@@ -230,7 +230,7 @@ Configure::Configure(int& argc, char** argv) : verbose(0)
     dictionary[ "BUILD" ]           = "debug";
     dictionary[ "BUILDALL" ]        = "auto"; // Means yes, but not explicitly
     dictionary[ "FORCEDEBUGINFO" ]  = "no";
-    dictionary[ "OPTIMIZED_TOOLS" ] = "no";
+    dictionary[ "RELEASE_TOOLS" ]   = "no";
 
     dictionary[ "BUILDTYPE" ]      = "none";
 
@@ -903,8 +903,10 @@ void Configure::parseCmdLine()
               dictionary[ "OPENSSL"] = "no";
         } else if (configCmdLine.at(i) == "-openssl") {
               dictionary[ "OPENSSL" ] = "yes";
+              dictionary[ "SSL" ] = "yes";
         } else if (configCmdLine.at(i) == "-openssl-linked") {
               dictionary[ "OPENSSL" ] = "linked";
+              dictionary[ "SSL" ] = "yes";
         } else if (configCmdLine.at(i) == "-no-libproxy") {
               dictionary[ "LIBPROXY"] = "no";
         } else if (configCmdLine.at(i) == "-libproxy") {
@@ -1368,6 +1370,14 @@ void Configure::parseCmdLine()
             dictionary[ "ANDROID_PLATFORM" ] = configCmdLine.at(i);
         }
 
+        else if (configCmdLine.at(i) == "-android-ndk-host") {
+            ++i;
+            if (i == argCount)
+                break;
+
+            dictionary[ "ANDROID_HOST" ] = configCmdLine.at(i);
+        }
+
         else if (configCmdLine.at(i) == "-android-arch") {
             ++i;
             if (i == argCount)
@@ -1699,17 +1709,6 @@ void Configure::applySpecSpecifics()
         dictionary[ "STYLE_FUSION" ]        = "no";
         dictionary[ "STYLE_WINDOWSCE" ]     = "yes";
         dictionary[ "STYLE_WINDOWSMOBILE" ] = "yes";
-        dictionary[ "OPENGL" ]              = "no";
-        dictionary[ "SSL" ]                 = "no";
-        dictionary[ "OPENSSL" ]             = "no";
-        dictionary[ "RTTI" ]                = "no";
-        dictionary[ "SSE2" ]                = "no";
-        dictionary[ "SSE3" ]                = "no";
-        dictionary[ "SSSE3" ]               = "no";
-        dictionary[ "SSE4_1" ]              = "no";
-        dictionary[ "SSE4_2" ]              = "no";
-        dictionary[ "AVX" ]                 = "no";
-        dictionary[ "AVX2" ]                = "no";
         dictionary[ "CE_CRT" ]              = "yes";
         dictionary[ "LARGE_FILE" ]          = "no";
         dictionary[ "ANGLE" ]               = "no";
@@ -3464,7 +3463,9 @@ void Configure::generateQDevicePri()
         deviceStream << "android_install {" << endl;
         deviceStream << "    DEFAULT_ANDROID_SDK_ROOT = " << formatPath(dictionary["ANDROID_SDK_ROOT"]) << endl;
         deviceStream << "    DEFAULT_ANDROID_NDK_ROOT = " << formatPath(dictionary["ANDROID_NDK_ROOT"]) << endl;
-        if (QSysInfo::WordSize == 64)
+        if (dictionary.contains("ANDROID_HOST"))
+            deviceStream << "    DEFAULT_ANDROID_NDK_HOST = " << dictionary["ANDROID_HOST"] << endl;
+        else if (QSysInfo::WordSize == 64)
             deviceStream << "    DEFAULT_ANDROID_NDK_HOST = windows-x86_64" << endl;
         else
             deviceStream << "    DEFAULT_ANDROID_NDK_HOST = windows" << endl;

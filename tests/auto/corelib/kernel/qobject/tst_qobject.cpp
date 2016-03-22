@@ -279,8 +279,10 @@ static void playWithObjects()
 
 void tst_QObject::initTestCase()
 {
+#ifndef QT_NO_PROCESS
     const QString testDataDir = QFileInfo(QFINDTESTDATA("signalbug")).absolutePath();
     QVERIFY2(QDir::setCurrent(testDataDir), qPrintable("Could not chdir to " + testDataDir));
+#endif
 }
 
 void tst_QObject::disconnect()
@@ -1848,6 +1850,8 @@ void tst_QObject::moveToThread()
         thread.wait();
     }
 
+    // WinRT does not allow connection to localhost
+#ifndef Q_OS_WINRT
     {
         // make sure socket notifiers are moved with the object
         MoveToThreadThread thread;
@@ -1883,6 +1887,7 @@ void tst_QObject::moveToThread()
         QMetaObject::invokeMethod(socket, "deleteLater", Qt::QueuedConnection);
         thread.wait();
     }
+#endif
 }
 
 
